@@ -14,6 +14,11 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.mongodb.client.model.Filters.all;
+import static com.mongodb.client.model.Filters.in;
+import static com.mongodb.client.model.Projections.fields;
+import static com.mongodb.client.model.Projections.include;
+
 @Component
 public class MovieDao extends AbstractMFlixDao {
 
@@ -117,13 +122,15 @@ public class MovieDao extends AbstractMFlixDao {
    * @return List of matching Document objects.
    */
   public List<Document> getMoviesByCountry(String... country) {
+      Bson queryFilter = in("countries", country);
+      Bson projection = include("title");
+      List<Document> movies = new ArrayList<>();
 
-    Bson queryFilter = new Document();
-    Bson projection = new Document();
-    //TODO> Ticket: Projection - implement the query and projection required by the unit test
-    List<Document> movies = new ArrayList<>();
-
-    return movies;
+      moviesCollection
+              .find(queryFilter)
+              .projection(projection)
+              .into(movies);
+      return movies;
   }
 
   /**
@@ -188,7 +195,7 @@ public class MovieDao extends AbstractMFlixDao {
    */
   public List<Document> getMoviesByGenre(String sortKey, int limit, int skip, String... genres) {
     // query filter
-    Bson castFilter = Filters.in("genres", genres);
+    Bson castFilter = in("genres", genres);
     // sort key
     Bson sort = Sorts.descending(sortKey);
     List<Document> movies = new ArrayList<>();
@@ -264,7 +271,7 @@ public class MovieDao extends AbstractMFlixDao {
     List<Document> movies = new ArrayList<>();
     String sortKey = "tomatoes.viewer.numReviews";
     Bson skipStage = Aggregates.skip(skip);
-    Bson matchStage = Aggregates.match(Filters.in("cast", cast));
+    Bson matchStage = Aggregates.match(in("cast", cast));
     Bson sortStage = Aggregates.sort(Sorts.descending(sortKey));
     Bson limitStage = Aggregates.limit(limit);
     Bson facetStage = buildFacetStage();
@@ -322,7 +329,7 @@ public class MovieDao extends AbstractMFlixDao {
    * @return number of matching documents.
    */
   public long getCastSearchCount(String... cast) {
-    return this.moviesCollection.countDocuments(Filters.in("cast", cast));
+    return this.moviesCollection.countDocuments(in("cast", cast));
   }
 
   /**
@@ -332,6 +339,6 @@ public class MovieDao extends AbstractMFlixDao {
    * @return number of matching documents.
    */
   public long getGenresSearchCount(String... genres) {
-    return this.moviesCollection.countDocuments(Filters.in("genres", genres));
+    return this.moviesCollection.countDocuments(in("genres", genres));
   }
 }
