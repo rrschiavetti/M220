@@ -28,7 +28,7 @@ public class UserTest extends TicketTest {
 
   private UserDao dao;
 
-  private static String email = "gryffindor@hogwarts.edu";
+  private static String email = "gryffinddfor@hogwafrts.edu";
   private User testUser;
   private String jwt;
   @Autowired MongoClient mongoClient;
