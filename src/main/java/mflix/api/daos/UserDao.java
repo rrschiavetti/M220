@@ -55,11 +55,15 @@ public class UserDao extends AbstractMFlixDao {
    * @return True if successful, throw IncorrectDaoOperation otherwise
    */
   public boolean addUser(User user) {
-    //TODO > Ticket: Durable Writes -  you might want to use a more durable write concern here!
-    usersCollection.insertOne(user);
-    return true;
     //TODO > Ticket: Handling Errors - make sure to only add new users
     // and not users that already exist.
+    try {
+      //TODO > Ticket: Durable Writes -  you might want to use a more durable write concern here!
+      usersCollection.insertOne(user);
+      return true;
+    } catch (Exception e) {
+      throw new IncorrectDaoOperation("Error");
+    }
 
   }
 
@@ -74,10 +78,17 @@ public class UserDao extends AbstractMFlixDao {
     Bson updateFilter = new Document("user_id", userId);
     Bson setUpdate = Updates.set("jwt", jwt);
     UpdateOptions options = new UpdateOptions().upsert(true);
-    sessionsCollection.updateOne(updateFilter, setUpdate, options);
-    return true;
+
     //TODO > Ticket: Handling Errors - implement a safeguard against
     // creating a session with the same jwt token.
+
+    try{
+      sessionsCollection.updateOne(updateFilter, setUpdate, options);
+      return true;
+    }catch (Exception e){
+      System.out.println("Error");
+      return false;
+    }
   }
 
   /**
@@ -115,10 +126,16 @@ public class UserDao extends AbstractMFlixDao {
    */
   public boolean deleteUser(String email) {
       sessionsCollection.deleteMany(eq("user_id", email));
-      usersCollection.deleteMany(eq("email", email));
+
     //TODO > Ticket: Handling Errors - make this method more robust by
     // handling potential exceptions.
-    return true;
+    try {
+      usersCollection.deleteMany(eq("email", email));
+      return true;
+    } catch (Exception e) {
+      System.out.println("Error");
+      return false;
+    }
   }
 
   /**
@@ -130,12 +147,17 @@ public class UserDao extends AbstractMFlixDao {
    * @return User object that just been updated.
    */
   public boolean updateUserPreferences(String email, Map<String, ?> userPreferences) {
-    usersCollection
-            .updateOne(
-                    eq("email",email), set("preferences", Optional.ofNullable(userPreferences)
-                            .orElseThrow(() -> new IncorrectDaoOperation("Cannot be null"))));
     //TODO > Ticket: Handling Errors - make this method more robust by
     // handling potential exceptions when updating an entry.
-    return true;
+    try {
+      usersCollection
+              .updateOne(
+                      eq("email",email), set("preferences", Optional.ofNullable(userPreferences)
+                              .orElseThrow(() -> new IncorrectDaoOperation("Cannot be null"))));
+      return true;
+    } catch (IncorrectDaoOperation incorrectDaoOperation) {
+      incorrectDaoOperation.printStackTrace();
+      return false;
+    }
   }
 }

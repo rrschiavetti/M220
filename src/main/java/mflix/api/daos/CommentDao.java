@@ -83,11 +83,16 @@ public class CommentDao extends AbstractMFlixDao {
     if(comment.getId()==null || comment.getId().isEmpty()){
       throw new IncorrectDaoOperation("null value");
     }
-    this.commentCollection.insertOne(comment);
 
-    // TODO> Ticket - Handling Errors: Implement a try catch block to
-    // handle a potential write exception when given a wrong commentId.
-    return comment;
+    try{
+      this.commentCollection.insertOne(comment);
+      return comment;
+    }catch (Exception e){
+      System.out.println("Error during the transaction: " + e.getMessage());
+      return null;
+
+    }
+
   }
 
   /**
@@ -112,11 +117,17 @@ public class CommentDao extends AbstractMFlixDao {
             set("text", text),
             set("date", new Date()));
 
-    //UpdateOptions options = new UpdateOptions().upsert(true);
-    UpdateResult res = commentCollection.updateOne(updateFilter, setUpdate);
-    // TODO> Ticket - Handling Errors: Implement a try catch block to
-    // handle a potential write exception when given a wrong commentId.
-    return res.getMatchedCount() > 0 ? true : false;
+    try{
+      UpdateResult res = commentCollection.updateOne(updateFilter, setUpdate);
+      // TODO> Ticket - Handling Errors: Implement a try catch block to
+      // handle a potential write exception when given a wrong commentId.
+      return res.getMatchedCount() > 0 ? true : false;
+
+    }catch (Exception e) {
+      System.out.println("Error");
+      return false;
+    }
+
   }
 
   /**
@@ -131,13 +142,16 @@ public class CommentDao extends AbstractMFlixDao {
           throw new IllegalArgumentException();
 
       Bson filter = and(eq("_id", new ObjectId(commentId)), eq("email", email));
-      DeleteResult res = commentCollection.deleteOne(filter);
-      return res.getDeletedCount() > 0 ? true : false;
 
-    // comment
-    // TIP: make sure to match only users that own the given commentId
     // TODO> Ticket Handling Errors - Implement a try catch block to
     // handle a potential write exception when given a wrong commentId.
+    try{
+      DeleteResult res = commentCollection.deleteOne(filter);
+      return res.getDeletedCount() > 0 ? true : false;
+    }catch (Exception e){
+      System.out.println("Error");
+      return false;
+    }
   }
 
   /**
