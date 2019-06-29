@@ -28,6 +28,13 @@ public class MongoDBConfiguration {
     // WriteConcern `wtimeout` and `connectTimeoutMS` values
     MongoClient mongoClient = MongoClients.create(connectionString);
 
+    WriteConcern writeConcern = WriteConcern.MAJORITY.withWTimeout(2500,TimeUnit.MILLISECONDS);
+    MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
+            .applyConnectionString(connString)
+            .writeConcern(writeConcern)
+            .build();
+
+    mongoClient = MongoClients.create(mongoClientSettings);
     return mongoClient;
   }
 }
