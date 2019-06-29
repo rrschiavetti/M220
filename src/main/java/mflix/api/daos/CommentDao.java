@@ -22,11 +22,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
+import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
@@ -87,8 +85,6 @@ public class CommentDao extends AbstractMFlixDao {
     }
     this.commentCollection.insertOne(comment);
 
-    // TODO> Ticket - Update User reviews: implement the functionality that enables adding a new
-    // comment.
     // TODO> Ticket - Handling Errors: Implement a try catch block to
     // handle a potential write exception when given a wrong commentId.
     return comment;
@@ -131,8 +127,6 @@ public class CommentDao extends AbstractMFlixDao {
    * @return true if successful deletes the comment.
    */
   public boolean deleteComment(String commentId, String email) {
-    // TODO> Ticket Delete Comments - Implement the method that enables the deletion of a user
-
       if(commentId == null || commentId.isEmpty())
           throw new IllegalArgumentException();
 
@@ -155,12 +149,14 @@ public class CommentDao extends AbstractMFlixDao {
    */
   public List<Critic> mostActiveCommenters() {
     List<Critic> mostActive = new ArrayList<>();
-    // // TODO> Ticket: User Report - execute a command that returns the
-    // // list of 20 users, group by number of comments. Don't forget,
-    // // this report is expected to be produced with an high durability
-    // // guarantee for the returned documents. Once a commenter is in the
-    // // top 20 of users, they become a Critic, so mostActive is composed of
-    // // Critic objects.
+    List<Bson> pipeline = Arrays.asList(
+            sortByCount("$email"),
+            sort(Sorts.descending("count")),
+            limit(20));
+
+    commentCollection
+            .withReadConcern(ReadConcern.MAJORITY)
+            .aggregate(pipeline,Critic.class).iterator().forEachRemaining(mostActive::add);
     return mostActive;
   }
 }
