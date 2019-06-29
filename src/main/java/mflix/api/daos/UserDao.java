@@ -1,15 +1,17 @@
 package mflix.api.daos;
 
 import com.mongodb.MongoClientSettings;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 import mflix.api.models.Session;
 import mflix.api.models.User;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +19,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Updates.set;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -67,13 +71,10 @@ public class UserDao extends AbstractMFlixDao {
    * @return true if successful
    */
   public boolean createUserSession(String userId, String jwt) {
-    Session session = new Session();
-    session.setUserId(userId);
-    session.setJwt(jwt);
-    UpdateOptions options = new UpdateOptions();
-    options.upsert(true);
-
-    this.sessionsCollection.insertOne(session);
+    Bson updateFilter = new Document("user_id", userId);
+    Bson setUpdate = Updates.set("jwt", jwt);
+    UpdateOptions options = new UpdateOptions().upsert(true);
+    sessionsCollection.updateOne(updateFilter, setUpdate, options);
     return true;
     //TODO > Ticket: Handling Errors - implement a safeguard against
     // creating a session with the same jwt token.
@@ -129,10 +130,12 @@ public class UserDao extends AbstractMFlixDao {
    * @return User object that just been updated.
    */
   public boolean updateUserPreferences(String email, Map<String, ?> userPreferences) {
-    //TODO> Ticket: User Preferences - implement the method that allows for user preferences to
-    // be updated.
+    usersCollection
+            .updateOne(
+                    eq("email",email), set("preferences", Optional.ofNullable(userPreferences)
+                            .orElseThrow(() -> new IncorrectDaoOperation("Cannot be null"))));
     //TODO > Ticket: Handling Errors - make this method more robust by
     // handling potential exceptions when updating an entry.
-    return false;
+    return true;
   }
 }
